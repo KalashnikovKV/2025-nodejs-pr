@@ -1,0 +1,32 @@
+[
+  {
+    "id": "1",
+    "name": "John Doe",
+    "age": 20,
+    "group": 2
+  },
+  {
+    "id": "2",
+    "name": "Jane Smith",
+    "age": 23,
+    "group": 3
+  },
+  {
+    "id": "3",
+    "name": "Mike Johnson",
+    "age": 18,
+    "group": 2
+  },
+  {
+    "id": "4",
+    "name": "Alice Brown",
+    "age": 21,
+    "group": 1
+  },
+  {
+    "id": "5",
+    "name": "Иван Петров",
+    "age": 22,
+    "group": "3"
+  }
+]

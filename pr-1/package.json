@@ -1,0 +1,11 @@
+{
+  "name": "pr-1",
+  "version": "",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node task/__tests__/run-all-tests.js"
+  },
+  "author": "Kirill Kalashnikov",
+  "license": "ISC"
+}
