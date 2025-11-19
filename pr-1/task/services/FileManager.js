@@ -1,27 +1,33 @@
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 const { createFileError } = require('../utils/errors');
 
-function ensureDirectoryExists(filePath) {
+async function ensureDirectoryExists(filePath) {
   const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  try {
+    await fs.access(dir);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      await fs.mkdir(dir, { recursive: true });
+    } else {
+      throw error;
+    }
   }
 }
 
-function saveToJSON(data, filePath) {
+async function saveToJSON(data, filePath) {
   try {
-    ensureDirectoryExists(filePath);
+    await ensureDirectoryExists(filePath);
     const jsonData = JSON.stringify(data, null, 2);
-    fs.writeFileSync(filePath, jsonData, 'utf8');
+    await fs.writeFile(filePath, jsonData, 'utf8');
   } catch (error) {
     throw createFileError('FAILED_TO_SAVE', error.message);
   }
 }
 
-function loadJSON(filePath) {
+async function loadJSON(filePath) {
   try {
-    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const fileContent = await fs.readFile(filePath, 'utf8');
     if (!fileContent.trim()) {
       return [];
     }
