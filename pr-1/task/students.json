@@ -28,5 +28,11 @@
     "name": "Иван Петров",
     "age": 22,
     "group": "3"
+  },
+  {
+    "id": "6",
+    "name": "Test Student",
+    "age": 25,
+    "group": "4"
   }
 ]
