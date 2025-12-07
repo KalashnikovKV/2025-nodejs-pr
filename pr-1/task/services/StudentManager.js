@@ -128,6 +128,21 @@ class StudentManager extends EventEmitter {
       }
     };
   }
+
+  updateStudent(id, name, age, group) {
+    const student = this.getStudentById(id);
+    if (!student) {
+      return null;
+    }
+
+    const validated = validator.validateStudentDataWithoutId(name, age, group);
+    student.name = validated.name;
+    student.age = validated.age;
+    student.group = validated.group;
+
+    return student;
+  }
+
 }
 
 module.exports = StudentManager;
