@@ -28,6 +28,11 @@ const DataErrors = {
   INVALID_STUDENT_AT_INDEX: (index, message) => `Invalid student data at index ${index}: ${message}`
 };
 
+const BackupErrors = {
+  PENDING_OPERATION_TIMEOUT: (intervals) => `Backup operation is pending for ${intervals} intervals`,
+  FAILED_TO_READ_BACKUP: (filePath, message) => `Failed to read backup file ${filePath}: ${message}`
+};
+
 function createValidationError(type, ...args) {
   const message = typeof ValidationErrors[type] === 'function' 
     ? ValidationErrors[type](...args)
@@ -56,14 +61,22 @@ function createDataError(type, ...args) {
   return new Error(message);
 }
 
+function createBackupError(type, ...args) {
+  const message = typeof BackupErrors[type] === 'function'
+    ? BackupErrors[type](...args)
+    : BackupErrors[type];
+  return new Error(message);
+}
+
 module.exports = {
   ValidationErrors,
   CLIErrors,
   FileErrors,
   DataErrors,
+  BackupErrors,
   createValidationError,
   createCLIError,
   createFileError,
-  createDataError
+  createDataError,
+  createBackupError
 };
-

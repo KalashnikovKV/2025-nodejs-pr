@@ -1,12 +1,15 @@
 const Student = require('./models/Student');
 const StudentManager = require('./services/StudentManager');
 const FileManager = require('./services/FileManager');
+const BackupManager = require('./services/BackupManager');
+const BackupReporter = require('./services/BackupReporter');
 const Logger = require('./utils/Logger');
 const parseCLIArguments = require('./utils/CLIParser');
 const constants = require('./utils/constants');
 const path = require('path');
 
 const DATA_FILE_PATH = path.join(__dirname, 'students.json');
+const BACKUP_DIR = path.join(__dirname, 'backups');
 
 let verbose, quiet, addStudent;
 let logger;
@@ -30,9 +33,12 @@ const initialStudents = [
   new Student("3", "Mike Johnson", 18, 2),
 ];
 
-function loadStudents() {
+let studentManager;
+let backupManager;
+
+async function loadStudents() {
   try {
-    const jsonData = FileManager.loadJSON(DATA_FILE_PATH);
+    const jsonData = await FileManager.loadJSON(DATA_FILE_PATH);
     if (jsonData.length > 0) {
       const manager = new StudentManager();
       manager.loadFromJSON(jsonData);
@@ -45,26 +51,54 @@ function loadStudents() {
   return new StudentManager(initialStudents);
 }
 
-const studentManager = loadStudents();
+function setupEventListeners() {
+  studentManager.on('student:added', (student) => {
+    logger.log(`Event: Student added - ${student.name} (ID: ${student.id})`);
+  });
+
+  studentManager.on('student:removed', (student) => {
+    logger.log(`Event: Student removed - ${student.name} (ID: ${student.id})`);
+  });
+
+  studentManager.on('students:loaded', (data) => {
+    logger.log(`Event: ${data.count} students loaded`);
+  });
+
+  backupManager.on('backup:started', (data) => {
+    logger.log(`Event: Backup started (interval: ${data.intervalMs}ms)`);
+  });
+
+  backupManager.on('backup:stopped', () => {
+    logger.log('Event: Backup stopped');
+  });
+
+  backupManager.on('backup:success', (data) => {
+    logger.log(`Event: Backup successful - ${path.basename(data.filePath)} (${data.studentsCount} students)`);
+  });
+
+  backupManager.on('backup:error', (error) => {
+    logger.log(`Event: Backup error - ${error.message}`);
+  });
+}
 
 function formatStudent(student) {
   return `ID: ${student.id}, Name: ${student.name}, Age: ${student.age}, Group: ${student.group}`;
 }
 
-function saveStudents() {
+async function saveStudents() {
   try {
-    FileManager.saveToJSON(studentManager.toJSON(), DATA_FILE_PATH);
+    await FileManager.saveToJSON(studentManager.toJSON(), DATA_FILE_PATH);
     logger.log(`Students saved to ${DATA_FILE_PATH}`);
   } catch (error) {
     logger.log(`Error saving: ${error.message}`);
   }
 }
 
-function handleAddStudent() {
+async function handleAddStudent() {
   try {
     const newStudent = studentManager.addStudent(addStudent.name, addStudent.age, addStudent.group);
     logger.log(`Student added successfully! ${formatStudent(newStudent)}`);
-    saveStudents();
+    await saveStudents();
   } catch (error) {
     logger.log(`Error adding student: ${error.message}`);
     process.exit(1);
@@ -112,7 +146,6 @@ function displayAverageAge() {
 
 function displayStatistics() {
   const stats = studentManager.getStatistics();
-  logger.log('\n=== Statistics ===');
   logger.log(`Total students: ${stats.total}`);
   if (stats.total > 0) {
     logger.log(`Average age: ${stats.averageAge.toFixed(2)}`);
@@ -124,9 +157,16 @@ function displayStatistics() {
   }
 }
 
-function main() {
+async function main() {
+  studentManager = await loadStudents();
+  backupManager = new BackupManager(studentManager, BACKUP_DIR, 30000);
+  
+  setupEventListeners();
+  backupManager.start();
+
   if (addStudent) {
-    handleAddStudent();
+    await handleAddStudent();
+    backupManager.stop();
     return;
   }
 
@@ -135,18 +175,28 @@ function main() {
   displayStudentsByGroup(constants.DEMO_GROUP);
   displayAverageAge();
   displayStatistics();
-  saveStudents();
+  await saveStudents();
+
+  setTimeout(async () => {
+    const reporter = new BackupReporter(BACKUP_DIR);
+    await reporter.printReport();
+    backupManager.stop();
+  }, 35000);
 }
 
 module.exports = {
   Student,
   StudentManager,
   FileManager,
+  BackupManager,
+  BackupReporter,
   Logger,
-  studentManager,
   logger
 };
 
 if (require.main === module) {
-  main();
+  main().catch(error => {
+    console.error('Fatal error:', error.message);
+    process.exit(1);
+  });
 }

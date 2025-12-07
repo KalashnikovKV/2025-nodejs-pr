@@ -1,9 +1,11 @@
+const EventEmitter = require('events');
 const Student = require('../models/Student');
 const validator = require('../utils/validator');
 const { createDataError } = require('../utils/errors');
 
-class StudentManager {
+class StudentManager extends EventEmitter {
   constructor(students = []) {
+    super();
     this.students = students;
     this._maxIdCache = null;
   }
@@ -37,14 +39,18 @@ class StudentManager {
     const student = new Student(id, validated.name, validated.age, validated.group);
     this.students.push(student);
     this._maxIdCache = maxId + 1;
+    
+    this.emit('student:added', student);
     return student;
   }
 
   removeStudent(id) {
     const index = this.students.findIndex(s => s.id === id);
     if (index !== -1) {
+      const removedStudent = this.students[index];
       this.students.splice(index, 1);
       this.#invalidateIdCache();
+      this.emit('student:removed', removedStudent);
       return true;
     }
     return false;
@@ -82,6 +88,7 @@ class StudentManager {
       }
     });
     this.#invalidateIdCache();
+    this.emit('students:loaded', { count: this.students.length });
   }
 
   toJSON() {
@@ -121,6 +128,21 @@ class StudentManager {
       }
     };
   }
+
+  updateStudent(id, name, age, group) {
+    const student = this.getStudentById(id);
+    if (!student) {
+      return null;
+    }
+
+    const validated = validator.validateStudentDataWithoutId(name, age, group);
+    student.name = validated.name;
+    student.age = validated.age;
+    student.group = validated.group;
+
+    return student;
+  }
+
 }
 
 module.exports = StudentManager;

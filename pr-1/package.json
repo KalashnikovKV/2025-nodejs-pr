@@ -4,8 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node task/__tests__/run-all-tests.js"
+    "test": "node task/__tests__/run-all-tests.js",
+    "start:basic": "node task/basic-server.js",
+    "start": "node task/server.js"
   },
   "author": "Kirill Kalashnikov",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
 }
